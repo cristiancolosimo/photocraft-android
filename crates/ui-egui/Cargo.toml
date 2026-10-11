@@ -31,7 +31,7 @@ photocraft-format = { workspace = true }
 photocraft-codecs = { workspace = true }
 egui = { workspace = true }
 egui_extras = { version = "0.36", default-features = false, features = ["svg"] }
-eframe = { workspace = true, features = ["wgpu", "accesskit"] }
+eframe = { workspace = true, features = ["default_fonts", "wgpu"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
@@ -44,10 +44,9 @@ rayon = { workspace = true }
 # Safe native UI-language APIs (Windows/macOS); no subprocess or web dependency.
 sys-locale = "=0.3.2"
 
-# Installed RAM for the GPU memory budget (`gpu_canvas::physical_memory`): the safe binding the
-# desktop app already uses, pinned to the same version.
-[target.'cfg(target_os = "windows")'.dependencies]
-winsafe = { version = "=0.0.29", default-features = false, features = ["kernel"] }
+# eframe's accesskit feature needs android-game-activity, and the Android build uses NativeActivity.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+eframe = { workspace = true, features = ["accesskit"] }
 
 [dev-dependencies]
 # egui's own default fonts in tests: the oracle for egui_fonts.rs, and contexts made with

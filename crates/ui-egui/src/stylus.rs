@@ -133,6 +133,11 @@ pub struct Stylus {
     pub(crate) tool_before_eraser: Option<crate::state::Tool>,
     /// Force of the touch/pen contact currently down (egui `Event::Touch`).
     touch: Option<f32>,
+    /// The touch contacts currently down, so a touch move outside them is a hovering pen.
+    contacts: Vec<egui::TouchId>,
+    /// A pen reported through touch events (it hovered, or a contact carried a force): its
+    /// contacts without a force are at pressure 0, not a finger's full pressure.
+    touch_pen: bool,
     /// Finger contacts down (Android only): they pan and zoom the view, never paint.
     fingers: std::collections::HashSet<u64>,
     /// Fingers that lifted this frame: still fingers for this frame's release, gone next frame.
@@ -171,6 +176,8 @@ impl Default for Stylus {
             end: None,
             tool_before_eraser: None,
             touch: None,
+            contacts: Vec::new(),
+            touch_pen: false,
             fingers: Default::default(),
             fingers_lifted: Vec::new(),
             lifted: false,
@@ -219,6 +226,7 @@ impl Stylus {
                     }
                     continue;
                 }
+                let force = force.filter(|f| f.is_finite()).map(|f| f.clamp(0.0, 1.0));
                 match phase {
                     egui::TouchPhase::Start | egui::TouchPhase::Move => {
                         let start = *phase == egui::TouchPhase::Start;

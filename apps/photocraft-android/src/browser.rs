@@ -23,7 +23,7 @@ pub struct Browser {
 impl Browser {
     pub fn new(request: FileDialogRequest, reply: FileDialogReply) -> Self {
         let (dir, name) = match &request {
-            FileDialogRequest::Open { initial_dir, .. } => (initial_dir.as_deref().map(PathBuf::from), String::new()),
+            FileDialogRequest::Open { initial_dir, .. } | FileDialogRequest::Folder { initial_dir } => (initial_dir.as_deref().map(PathBuf::from), String::new()),
             FileDialogRequest::Save { suggested } => {
                 let p = Path::new(suggested);
                 (p.parent().map(Path::to_path_buf), p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())
@@ -44,8 +44,9 @@ impl Browser {
         let screen = ctx.content_rect().size();
         let size = egui::vec2((screen.x * 0.9).min(900.0), screen.y * 0.9);
         let save = matches!(self.request, FileDialogRequest::Save { .. });
+        let folder = matches!(self.request, FileDialogRequest::Folder { .. });
         let mut cancel = false;
-        egui::Window::new(if save { "Save As" } else { "Open" })
+        egui::Window::new(if save { "Save As" } else if folder { "Choose Folder" } else { "Open" })
             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .fixed_size(size)
             .collapsible(false)
@@ -67,7 +68,7 @@ impl Browser {
                         self.dir = PathBuf::from(ROOT);
                     }
                 }
-                Ok(entries) => self.listing(ui, entries, size.y - 150.0, save, &mut cancel),
+                Ok(entries) => self.listing(ui, entries, size.y - 150.0, save, folder, &mut cancel),
             });
         if cancel {
             self.finish(None);
@@ -75,10 +76,10 @@ impl Browser {
         self.reply.is_some()
     }
 
-    fn listing(&mut self, ui: &mut egui::Ui, entries: std::fs::ReadDir, height: f32, save: bool, cancel: &mut bool) {
+    fn listing(&mut self, ui: &mut egui::Ui, entries: std::fs::ReadDir, height: f32, save: bool, folder: bool, cancel: &mut bool) {
         let (multiple, exts) = match &self.request {
             FileDialogRequest::Open { multiple, extensions, .. } => (*multiple, extensions.clone()),
-            FileDialogRequest::Save { .. } => (false, None),
+            FileDialogRequest::Save { .. } | FileDialogRequest::Folder { .. } => (false, None),
         };
         let mut dirs = Vec::new();
         let mut files = Vec::new();
@@ -89,7 +90,7 @@ impl Browser {
             }
             if e.path().is_dir() {
                 dirs.push(name);
-            } else if !save && exts.as_ref().is_none_or(|x| ext_of(&name).is_some_and(|ext| x.iter().any(|y| y.eq_ignore_ascii_case(&ext)))) {
+            } else if !save && !folder && exts.as_ref().is_none_or(|x| ext_of(&name).is_some_and(|ext| x.iter().any(|y| y.eq_ignore_ascii_case(&ext)))) {
                 files.push(name);
             }
         }
@@ -129,7 +130,12 @@ impl Browser {
             self.picked.clear();
         }
         ui.horizontal(|ui| {
-            if save {
+            if folder {
+                if ui.button("Choose this folder").clicked() {
+                    let dir = self.dir.to_string_lossy().into_owned();
+                    self.finish(Some(FileDialogAnswer::FolderTo(dir)));
+                }
+            } else if save {
                 ui.add(egui::TextEdit::singleline(&mut self.name).desired_width(ui.available_width() - 200.0));
                 if ui.add_enabled(!self.name.trim().is_empty(), egui::Button::new("Save")).clicked() {
                     let path = self.dir.join(self.name.trim()).to_string_lossy().into_owned();

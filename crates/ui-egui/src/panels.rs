@@ -209,7 +209,7 @@ pub fn toolbar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                         && (resp.secondary_clicked() || (resp.clicked() && ui.data(|d| d.get_temp::<egui::Id>(held_id)) != Some(key)));
                                     if reclicked {
                                         ui.data_mut(|d| d.remove::<(egui::Id, Rect)>(flyout_id));
-                                    } else if slot.len() > 1 && (resp.secondary_clicked() || long_press || drag_open) {
+                                    } else if slot.len() > 1 && (resp.secondary_clicked() || long_press || drag_open || (resp.double_clicked() && !matches!(tool, Tool::Hand | Tool::Zoom))) {
                                         ui.data_mut(|d| {
                                             d.insert_temp(flyout_id, (key, resp.rect));
                                             if long_press || drag_open {

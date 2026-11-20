@@ -21,6 +21,10 @@ fn android_main(app: AndroidApp) {
     let activity = app.clone();
     let mut options = eframe::NativeOptions { android_app: Some(app), ..Default::default() };
     photocraft_ui_egui::gpu_canvas::use_adapter_limits(&mut options.wgpu_options.wgpu_setup);
+    // Pen latency: no vsync queue (Mailbox/Immediate when the driver has it) and one frame in flight,
+    // as the desktop's Low-Latency Drawing does.
+    options.wgpu_options.surface.present_mode = eframe::wgpu::PresentMode::AutoNoVsync;
+    options.wgpu_options.surface.desired_maximum_frame_latency = Some(1);
     if let WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup {
         create.instance_descriptor.backends = eframe::wgpu::Backends::VULKAN;
     }

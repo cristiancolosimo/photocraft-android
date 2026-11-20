@@ -35,6 +35,8 @@ android-activity = { version = "0.6", features = ["native-activity"] }
 
 # cargo-apk: `cargo apk build -p photocraft-android --lib --release`
 [package.metadata.android]
+# Launcher icon: PNGs rendered from assets/app-icon (packaging/icons.sh art).
+resources = "res"
 package = "ai.storyteller.photocraft"
 build_targets = ["aarch64-linux-android"]
 [package.metadata.android.sdk]
@@ -43,6 +45,7 @@ min_sdk_version = 29
 target_sdk_version = 34
 [package.metadata.android.application]
 label = "PhotoCraft"
+icon = "@mipmap/ic_launcher"
 # No action bar, and fullscreen: the status bar would cover the menu bar.
 theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
 [package.metadata.android.application.activity]
